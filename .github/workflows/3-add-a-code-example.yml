@@ -54,7 +54,9 @@ jobs:
         with:
           fetch-depth: 0 # Let's get all the branches.
 
-      # Check that there is at least one code example in the markdown file.
+      # Check that there is at least one code block in the markdown file.
+      # Note: This checks for presence of fenced code blocks (```).
+      # The lint-markdown workflow provides additional validation for proper closure.
       - name: Check markdown syntax, code example
         uses: skills/action-check-file@v1
         with:

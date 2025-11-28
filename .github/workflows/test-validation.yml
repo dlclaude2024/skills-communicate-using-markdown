@@ -1,0 +1,213 @@
+name: Test Validation Patterns
+
+# Tests the regex validation patterns used in course workflows.
+# Ensures valid Markdown passes and invalid Markdown fails validation.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/tests/**"
+  pull_request:
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test-header-validation:
+    name: Test header regex patterns
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test valid headers pass
+        run: |
+          echo "Testing valid headers..."
+          if grep -qP "^#{1,6}[\ \t]+.+$" .github/tests/fixtures/valid-headers.md; then
+            echo "PASS: Valid headers detected correctly"
+          else
+            echo "FAIL: Valid headers should have matched"
+            exit 1
+          fi
+
+      - name: Test invalid headers fail (no space after #)
+        run: |
+          echo "Testing that '#No space' pattern is rejected..."
+          # This pattern should NOT match headers without space
+          if echo "#NoSpace" | grep -qP "^#{1,6}[\ \t]+.+$"; then
+            echo "FAIL: '#NoSpace' should not match (missing space)"
+            exit 1
+          else
+            echo "PASS: '#NoSpace' correctly rejected"
+          fi
+
+      - name: Test invalid headers fail (too many hashes)
+        run: |
+          echo "Testing that '####### Seven hashes' is rejected..."
+          if echo "####### Seven hashes" | grep -qP "^#{1,6}[\ \t]+.+$"; then
+            echo "FAIL: Seven hashes should not match"
+            exit 1
+          else
+            echo "PASS: Seven hashes correctly rejected"
+          fi
+
+  test-image-validation:
+    name: Test image regex patterns
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test valid images pass
+        run: |
+          echo "Testing valid images..."
+          if grep -qP '\!\[.+\]\([^\s]+\)' .github/tests/fixtures/valid-images.md; then
+            echo "PASS: Valid images detected correctly"
+          else
+            echo "FAIL: Valid images should have matched"
+            exit 1
+          fi
+
+      - name: Test empty alt text fails
+        run: |
+          echo "Testing that '![](url)' is rejected..."
+          if echo '![](url)' | grep -qP '\!\[.+\]\([^\s]+\)'; then
+            echo "FAIL: Empty alt text should not match"
+            exit 1
+          else
+            echo "PASS: Empty alt text correctly rejected"
+          fi
+
+      - name: Test empty URL fails
+        run: |
+          echo "Testing that '![alt]()' is rejected..."
+          if echo '![alt]()' | grep -qP '\!\[.+\]\([^\s]+\)'; then
+            echo "FAIL: Empty URL should not match"
+            exit 1
+          else
+            echo "PASS: Empty URL correctly rejected"
+          fi
+
+      - name: Test completely empty fails
+        run: |
+          echo "Testing that '![]()' is rejected..."
+          if echo '![]()' | grep -qP '\!\[.+\]\([^\s]+\)'; then
+            echo "FAIL: Empty image should not match"
+            exit 1
+          else
+            echo "PASS: Empty image correctly rejected"
+          fi
+
+  test-code-block-validation:
+    name: Test code block patterns
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test valid code blocks pass
+        run: |
+          echo "Testing valid code blocks..."
+          if grep -q '```' .github/tests/fixtures/valid-code-blocks.md; then
+            echo "PASS: Code blocks detected correctly"
+          else
+            echo "FAIL: Code blocks should have been detected"
+            exit 1
+          fi
+
+      - name: Test code blocks are properly closed
+        run: |
+          echo "Checking for balanced code fences in valid file..."
+          count=$(grep -c '```' .github/tests/fixtures/valid-code-blocks.md || true)
+          if [ $((count % 2)) -eq 0 ]; then
+            echo "PASS: Code blocks are balanced ($count fences)"
+          else
+            echo "FAIL: Unbalanced code blocks detected"
+            exit 1
+          fi
+
+      - name: Test invalid code blocks have odd fence count
+        run: |
+          echo "Checking that invalid file has unbalanced fences..."
+          count=$(grep -c '```' .github/tests/fixtures/invalid-code-blocks.md || true)
+          if [ $((count % 2)) -ne 0 ]; then
+            echo "PASS: Invalid file correctly has unbalanced fences ($count)"
+          else
+            echo "WARN: Invalid file may have been fixed or count is coincidentally even"
+          fi
+
+  test-task-list-validation:
+    name: Test task list regex patterns
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test valid task lists pass
+        run: |
+          echo "Testing valid task lists..."
+          if grep -qP "^[\ \t]*([\\-\\+\\*]|[0-9]+\\.)[\ \t]+\\[[\ xX]\\][\ \t]+.+$" .github/tests/fixtures/valid-task-lists.md; then
+            echo "PASS: Valid task lists detected correctly"
+          else
+            echo "FAIL: Valid task lists should have matched"
+            exit 1
+          fi
+
+      - name: Test missing list marker fails
+        run: |
+          echo "Testing that '[ ] Task' without marker is rejected..."
+          if echo '[ ] Task without marker' | grep -qP "^[\ \t]*([\\-\\+\\*]|[0-9]+\\.)[\ \t]+\\[[\ xX]\\][\ \t]+.+$"; then
+            echo "FAIL: Missing list marker should not match"
+            exit 1
+          else
+            echo "PASS: Missing list marker correctly rejected"
+          fi
+
+      - name: Test missing space after marker fails
+        run: |
+          echo "Testing that '-[ ] Task' without space is rejected..."
+          if echo '-[ ] Task' | grep -qP "^[\ \t]*([\\-\\+\\*]|[0-9]+\\.)[\ \t]+\\[[\ xX]\\][\ \t]+.+$"; then
+            echo "FAIL: Missing space after marker should not match"
+            exit 1
+          else
+            echo "PASS: Missing space after marker correctly rejected"
+          fi
+
+      - name: Test empty task text fails
+        run: |
+          echo "Testing that '- [x]' without text is rejected..."
+          if echo '- [x]' | grep -qP "^[\ \t]*([\\-\\+\\*]|[0-9]+\\.)[\ \t]+\\[[\ xX]\\][\ \t]+.+$"; then
+            echo "FAIL: Empty task text should not match"
+            exit 1
+          else
+            echo "PASS: Empty task text correctly rejected"
+          fi
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-header-validation, test-image-validation, test-code-block-validation, test-task-list-validation]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All regex validation patterns have been tested against fixture files." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Header Validation | ${{ needs.test-header-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Validation | ${{ needs.test-image-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Block Validation | ${{ needs.test-code-block-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Task List Validation | ${{ needs.test-task-list-validation.result }} |" >> $GITHUB_STEP_SUMMARY

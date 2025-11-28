@@ -54,12 +54,13 @@ jobs:
         with:
           fetch-depth: 0 # Let's get all the branches.
 
-      # Check that there is at least one image in the markdown file.
+      # Check that there is at least one properly formatted image in the markdown file.
+      # Improved regex: requires alt text (at least 1 char) and a URL (at least 1 char).
       - name: Check markdown syntax, image
         uses: skills/action-check-file@v1
         with:
           file: "index.md"
-          search: "\\!\\[.*\\]\\(.*\\)"
+          search: "\\!\\[.+\\]\\([^\\s]+\\)"
 
       # In README.md, switch step 2 for step 3.
       - name: Update to step 3

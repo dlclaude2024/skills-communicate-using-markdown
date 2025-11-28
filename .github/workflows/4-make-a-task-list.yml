@@ -54,12 +54,13 @@ jobs:
         with:
           fetch-depth: 0 # Let's get all the branches.
 
-      # Make sure there is at least one task list item in the file.
+      # Make sure there is at least one properly formatted task list item in the file.
+      # Regex validates: list marker (-, +, *, or number), space, checkbox [ ]/[x]/[X], space, and content.
       - name: Check markdown syntax, task list
         uses: skills/action-check-file@v1
         with:
           file: "index.md"
-          search: "([\\-\\+\\*]|[0-9]+\\.)[\ \\t]+\\[[\ \\t\\fxX]\\][\ \\t\\f]+\\S.*$"
+          search: "^[\ \\t]*([\\-\\+\\*]|[0-9]+\\.)[\ \\t]+\\[[\ xX]\\][\ \\t]+.+$"
 
       # In README.md, switch step 4 for step 5.
       - name: Update to step 5

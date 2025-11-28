@@ -1,0 +1,17 @@
+# Lychee link checker ignore file
+# These patterns will be excluded from link checking
+
+# Example domains used in documentation
+https://example.com/*
+http://example.com/*
+
+# Placeholder URLs in test fixtures
+https://example.com/image.png
+./screenshots/*
+
+# GitHub URLs that require authentication
+https://github.com/.*/settings.*
+
+# Local development URLs
+http://localhost:*
+https://localhost:*

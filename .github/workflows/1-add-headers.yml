@@ -54,12 +54,13 @@ jobs:
         with:
           fetch-depth: 0 # Let's get all the branches.
 
-      # Check that there is at least one header in the markdown file.
+      # Check that there is at least one properly formatted header in the markdown file.
+      # Improved regex: requires 1-6 # symbols followed by a space and actual content.
       - name: Check markdown syntax, header
         uses: skills/action-check-file@v1
         with:
           file: "index.md"
-          search: "(?<!#)#{1,6}([\ \\t](.*))?$"
+          search: "^#{1,6}[\ \\t]+.+$"
 
       # In README.md, switch step 1 for step 2.
       - name: Update to step 2
